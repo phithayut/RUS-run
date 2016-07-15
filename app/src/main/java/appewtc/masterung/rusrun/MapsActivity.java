@@ -5,6 +5,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
@@ -15,6 +16,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.squareup.okhttp.Call;
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.FormEncodingBuilder;
@@ -22,6 +24,9 @@ import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.IOException;
 
@@ -140,8 +145,71 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //Loop
         myLoop();
 
-
     }   // onMapReady
+
+    private class CreateMarker extends AsyncTask<Void, Void, String> {
+
+        //Explicit
+        private Context context;
+        private GoogleMap googleMap;
+        private String urlJSON = "http://swiftcodingthai.com/rus/get_user_eng.php";
+
+        public CreateMarker(Context context, GoogleMap googleMap) {
+            this.context = context;
+            this.googleMap = googleMap;
+        }   //Consturctor
+
+        @Override
+        protected String doInBackground(Void... voids) {
+
+            try {
+
+                OkHttpClient okHttpClient = new OkHttpClient();
+                Request.Builder builder = new Request.Builder();
+                Request request = builder.url(urlJSON).build();
+                Response response = okHttpClient.newCall(request).execute();
+                return response.body().string();
+
+            } catch (Exception e) {
+                return null;
+            }   //try
+
+        }   //doInBack
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+
+            Log.d("RusV4", "JSON ==>>> " + s);
+
+            try {
+
+                JSONArray jsonArray = new JSONArray(s);
+                for (int i =0;i<jsonArray.length();i++) {
+
+                    JSONObject jsonObject = jsonArray.getJSONObject(i);
+
+                    double douLat = Double.parseDouble(jsonObject.getString("Lat"));
+                    double douLng = Double.parseDouble(jsonObject.getString("Lng"));
+                    String strname = jsonObject.getString("Name");
+
+                    LatLng latLng = new LatLng(douLat, douLng);
+                    googleMap.addMarker(new MarkerOptions()
+                            .position(latLng)
+                            .title(strname));
+
+                }   //for
+
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+
+        }   //onPost
+
+    }   //CreateMarker Class
+
 
     private void myLoop() {
 
@@ -151,6 +219,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         //Edit Lat,Lng on Server
         editLatLngOnServer();
+
+        //Create Marker
+        mMap.clear();
+        CreateMarker createMarker = new CreateMarker(this, mMap);
+        createMarker.execute();
+
 
         //Delay
         Handler handler = new Handler();
