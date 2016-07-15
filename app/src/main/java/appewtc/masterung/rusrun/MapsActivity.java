@@ -154,6 +154,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         private GoogleMap googleMap;
         private String urlJSON = "http://swiftcodingthai.com/rus/get_user_eng.php";
 
+
         public CreateMarker(Context context, GoogleMap googleMap) {
             this.context = context;
             this.googleMap = googleMap;
